@@ -1,0 +1,102 @@
+
+ // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract AgenticPerpDEX {
+
+    address public owner;
+
+    struct Position {
+        address trader;
+        uint256 margin;
+        uint256 entryPrice;
+        uint256 leverage;
+        bool isLong;
+        bool active;
+    }
+
+    mapping(address => Position) public positions;
+
+    uint256 public marketPrice = 3000 ether;
+
+    event PositionOpened(
+        address indexed trader,
+        uint256 margin,
+        uint256 leverage,
+        bool isLong
+    );
+
+    event PositionClosed(address indexed trader);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not authorized");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // Update simulated oracle price
+    function updatePrice(uint256 newPrice)
+        external
+        onlyOwner
+    {
+        require(newPrice > 0, "Invalid price");
+        marketPrice = newPrice;
+    }
+
+    // Open simulated perpetual position
+    function openPosition(
+        uint256 leverage,
+        bool isLong
+    ) external payable {
+
+        require(!positions[msg.sender].active, "Position exists");
+        require(msg.value > 0, "Margin required");
+        require(leverage > 0 && leverage <= 10, "Invalid leverage");
+
+        positions[msg.sender] = Position({
+            trader: msg.sender,
+            margin: msg.value,
+            entryPrice: marketPrice,
+            leverage: leverage,
+            isLong: isLong,
+            active: true
+        });
+
+        emit PositionOpened(
+            msg.sender,
+            msg.value,
+            leverage,
+            isLong
+        );
+    }
+
+    // Close position
+    function closePosition() external {
+        require(positions[msg.sender].active, "No position");
+
+        positions[msg.sender].active = false;
+
+        emit PositionClosed(msg.sender);
+    }
+
+    // Agentic AI price monitoring
+    function getMarketData()
+        external
+        view
+        returns (uint256 price, uint256 timestamp)
+    {
+        return (marketPrice, block.timestamp);
+    }
+
+    // AI agent authorization example
+    function agentUpdatePrice(uint256 newPrice)
+        external
+        onlyOwner
+    {
+        require(newPrice > 0, "Invalid price");
+        marketPrice = newPrice;
+    }
+}
